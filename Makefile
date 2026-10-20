@@ -1,6 +1,7 @@
 #
-# 'make'        build executable file 'main'
-# 'make clean'  removes all .o and executable files
+# 'make'                 build executable file 'main'
+# 'make clean'           removes all .o and executable files
+# 'make run MODEL=x.fbx' run the viewer with a model
 #
 
 # define the Cpp compiler to use
@@ -20,7 +21,7 @@ OUTPUT	:= output
 
 # define source directory
 SRC		:= src
-GLAD		:= ../glad
+GLAD		:= .
 
 # define include directory
 INCLUDE	:= include
@@ -50,11 +51,11 @@ endif
 INCLUDES	:= $(patsubst %,-I%, $(INCLUDEDIRS:%/=%)) -I$(GLAD)/include
 
 # define the C libs
-LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%)) -lglfw -lGL -ldl -pthread
+LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%)) -lglfw -lassimp -lGL -ldl -pthread
 
 # define the C source files
 SOURCES		:= $(wildcard $(patsubst %,%/*.cpp, $(SOURCEDIRS)))
-GLAD_SOURCE	:= $(GLAD)/src/glad.c
+GLAD_SOURCE	:= $(SRC)/glad.c
 
 # define the C object files
 OBJECTS		:= $(SOURCES:.cpp=.o)
@@ -102,5 +103,5 @@ clean:
 	@echo Cleanup complete!
 
 run: all
-	./$(OUTPUTMAIN)
+	./$(OUTPUTMAIN) $(if $(MODEL),"$(MODEL)","src/model.fbx")
 	@echo Executing 'run: all' complete!
