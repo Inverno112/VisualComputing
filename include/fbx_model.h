@@ -138,7 +138,7 @@ public:
 
         for (auto& c : cpu)
         {
-            for (size_t i = 0; i < c.v.size(); i += 6)
+            for (size_t i = 0; i < c.v.size(); i += 14)
             {
                 c.v[i + 0] = (c.v[i + 0] - center.x) * scale;
                 c.v[i + 1] = (c.v[i + 1] - center.y) * scale;

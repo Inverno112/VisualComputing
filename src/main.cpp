@@ -48,6 +48,13 @@ GLuint shadowMap = 0;
 constexpr unsigned int SHADOW_SIZE = 2048;
 Shader* depthShader = nullptr;
 
+constexpr int OPTION_COUNT = 7;
+constexpr float UI_LEFT = -0.97f;
+constexpr float UI_TOP = 0.90f;
+constexpr float UI_BUTTON_WIDTH = 0.09f;
+constexpr float UI_BUTTON_HEIGHT = 0.08f;
+constexpr float UI_BUTTON_STEP = 0.105f;
+
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -250,13 +257,20 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int)
 
     double x, y;
     glfwGetCursorPos(window, &x, &y);
-    float left = 15.0f;
-    float top = 15.0f;
-    const float width = 34.0f;
-    const float gap = 5.0f;
-    const int index = static_cast<int>((x - left) / (width + gap));
-    if (y >= top && y <= top + 32.0f && index >= 0 && index < 7 &&
-        x >= left + index * (width + gap) && x <= left + index * (width + gap) + width)
+
+    // GLFW entrega la posición del cursor en coordenadas de ventana. Convertir
+    // a NDC hace que la zona de escucha coincida con los quads dibujados.
+    int windowWidth = 0;
+    int windowHeight = 0;
+    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+    if (windowWidth <= 0 || windowHeight <= 0) return;
+    const float mouseNdcX = 2.0f * static_cast<float>(x) / windowWidth - 1.0f;
+    const float mouseNdcY = 1.0f - 2.0f * static_cast<float>(y) / windowHeight;
+    const int index = static_cast<int>((mouseNdcX - UI_LEFT) / UI_BUTTON_STEP);
+    const float buttonLeft = UI_LEFT + index * UI_BUTTON_STEP;
+    if (mouseNdcY >= UI_TOP && mouseNdcY <= UI_TOP + UI_BUTTON_HEIGHT &&
+        index >= 0 && index < OPTION_COUNT &&
+        mouseNdcX >= buttonLeft && mouseNdcX <= buttonLeft + UI_BUTTON_WIDTH)
     {
         bool* values[] = { &options.pointLight, &options.spotLight, &options.specular,
                            &options.shadows, &options.multipleLights, &options.attenuation,
@@ -289,11 +303,11 @@ void drawOptionsUi(Shader& uiShader)
         {0.5f, 0.3f, 0.9f}, {0.2f, 0.8f, 0.3f}, {0.9f, 0.3f, 0.7f}, {0.3f, 0.8f, 0.7f}
     };
     std::vector<float> vertices;
-    for (int i = 0; i < 7; ++i)
+    for (int i = 0; i < OPTION_COUNT; ++i)
     {
-        float x0 = -0.97f + i * 0.105f;
-        float x1 = x0 + 0.09f;
-        float y0 = 0.90f, y1 = 0.98f;
+        float x0 = UI_LEFT + i * UI_BUTTON_STEP;
+        float x1 = x0 + UI_BUTTON_WIDTH;
+        float y0 = UI_TOP, y1 = UI_TOP + UI_BUTTON_HEIGHT;
         glm::vec3 color = values[i] ? colorsOn[i] : glm::vec3(0.15f);
         const float quad[] = { x0,y0,color.r,color.g,color.b, x1,y0,color.r,color.g,color.b,
                                x1,y1,color.r,color.g,color.b, x0,y0,color.r,color.g,color.b,
