@@ -31,3 +31,6 @@ void main()
     FragPosLightSpace = lightSpaceMatrix * worldPos;
     gl_Position = projection * view * worldPos;
 }
+
+
+
