@@ -60,12 +60,15 @@ bool cameraDragging = false;
 // Estructura para almacenar las opciones de renderizado.
 struct RenderOptions
 {
+    bool unlit = false;
+    bool directionalLight = true;
     bool pointLight = true;
     bool spotLight = true;
     bool specular = true;
     bool shadows = true;
     bool multipleLights = true;
     bool attenuation = true;
+    bool ambientLight = true;
     bool ambientOcclusion = true;
 } options;
 
@@ -81,7 +84,7 @@ Shader* depthShader = nullptr;// Puntero al shader que se utiliza para renderiza
 // desde la perspectiva de la luz.
 
 //Al estar en NDC se adaptan automáticamente al tamaño de la ventana, manteniendo el aspect ratio.
-constexpr int OPTION_COUNT = 7;// Número de opciones de renderizado disponibles.
+constexpr int OPTION_COUNT = 10;// Número de opciones de renderizado disponibles.
 constexpr float UI_LEFT = -0.97f;// Posición X del borde izquierdo de la UI en coordenadas NDC (Normalized Device Coordinates).
 constexpr float UI_TOP = 0.90f;// Posición Y del borde superior de la UI en coordenadas NDC.
 constexpr float UI_BUTTON_WIDTH = 0.09f;// Ancho de cada botón de la UI en coordenadas NDC.
@@ -286,13 +289,16 @@ int main(int argc, char** argv)
         shader.setVec3("viewPos", camera.Position);
         shader.setVec3("uLightDir", lightDir);
         shader.setVec3("uLightColor", lightColor);
+        shader.setBool("uUnlit", options.unlit);
         shader.setFloat("uAmbientStrength", ambientStrength);
         shader.setFloat("uShininess", 32.0f);
         shader.setBool("uEnablePointLight", options.pointLight);
+        shader.setBool("uEnableDirectionalLight", options.directionalLight);
         shader.setBool("uEnableSpotLight", options.spotLight);
         shader.setBool("uEnableSpecular", options.specular);
         shader.setBool("uEnableShadows", options.shadows);
         shader.setBool("uEnableAttenuation", options.attenuation);
+        shader.setBool("uEnableAmbient", options.ambientLight);
         shader.setBool("uEnableAO", options.ambientOcclusion);
         shader.setInt("uPointLightCount", options.multipleLights ? 4 : 1);
 
@@ -382,8 +388,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int)
         index >= 0 && index < OPTION_COUNT &&
         mouseNdcX >= buttonLeft && mouseNdcX <= buttonLeft + UI_BUTTON_WIDTH)
     {
-        bool* values[] = { &options.pointLight, &options.spotLight, &options.specular,
+        bool* values[] = { &options.unlit, &options.directionalLight, &options.pointLight,
+                           &options.spotLight,
+                           &options.specular,
                            &options.shadows, &options.multipleLights, &options.attenuation,
+                           &options.ambientLight,
                            &options.ambientOcclusion };
         *values[index] = !*values[index];
         updateWindowTitle(window);
@@ -393,24 +402,32 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int)
 void updateWindowTitle(GLFWwindow* window)
 {
     std::ostringstream title;
-    title << "FBX Viewer | Point light:" << (options.pointLight ? "ON" : "OFF")
+    title << "FBX Viewer | Unlit:" << (options.unlit ? "ON" : "OFF")
+          << " Directional light:" << (options.directionalLight ? "ON" : "OFF")
+          << " Point light:" << (options.pointLight ? "ON" : "OFF")
           << " Spotlight:" << (options.spotLight ? "ON" : "OFF")// Spot light
           << " Specular:" << (options.specular ? "ON" : "OFF")// Specular
           << " Shadows:" << (options.shadows ? "ON" : "OFF")// Shadows
           << " Multiple lights:" << (options.multipleLights ? "ON" : "OFF")// Multiple lights
           << " Atenuation:" << (options.attenuation ? "ON" : "OFF")// Attenuation
+          << " Ambient:" << (options.ambientLight ? "ON" : "OFF")
           << " AO:" << (options.ambientOcclusion ? "ON" : "OFF");
     glfwSetWindowTitle(window, title.str().c_str());
 }
 
 void drawOptionsUi(Shader& uiShader)
 {
-    const bool values[] = { options.pointLight, options.spotLight, options.specular,
+    const bool values[] = { options.unlit, options.directionalLight, options.pointLight,
+                            options.spotLight,
+                            options.specular,
                             options.shadows, options.multipleLights, options.attenuation,
-                            options.ambientOcclusion };
+                            options.ambientLight,
+                            options.ambientOcclusion, };
     const glm::vec3 colorsOn[] = {
         {0.9f, 0.2f, 0.1f}, {0.9f, 0.6f, 0.1f}, {0.2f, 0.8f, 0.9f},
-        {0.5f, 0.3f, 0.9f}, {0.2f, 0.8f, 0.3f}, {0.9f, 0.3f, 0.7f}, {0.3f, 0.8f, 0.7f}
+        {0.5f, 0.3f, 0.9f}, {0.2f, 0.8f, 0.3f}, {0.9f, 0.3f, 0.7f},
+        {0.9f, 0.8f, 0.2f}, {0.3f, 0.8f, 0.7f}, {0.8f, 0.5f, 0.2f},
+        {0.8f, 0.3f, 0.8f}
     };
     std::vector<float> vertices;
     for (int i = 0; i < OPTION_COUNT; ++i)

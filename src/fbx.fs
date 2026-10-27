@@ -26,6 +26,7 @@ uniform sampler2D uNormalTexture;//textura normal del material, representa la te
 uniform sampler2D uShadowMap;//mapa de sombras generado desde la perspectiva de la luz, utilizado para determinar si un fragmento está en sombra o no
 uniform bool uHasDiffuseTexture;//indica si el material tiene una textura difusa o no
 uniform bool uHasNormalTexture;//indica si el material tiene una textura normal o no
+uniform bool uUnlit;
 
 uniform vec3 viewPos;//posición de la cámara en el espacio del mundo, utilizada para calcular la iluminación especular
 uniform mat4 lightSpaceMatrix;
@@ -48,10 +49,12 @@ uniform float uSpotOuterCutoff;//ángulo de corte externo de la luz puntual, uti
 uniform float uAmbientStrength;
 uniform float uShininess;
 uniform bool uEnablePointLight;
+uniform bool uEnableDirectionalLight;
 uniform bool uEnableSpotLight;
 uniform bool uEnableSpecular;
 uniform bool uEnableShadows;
 uniform bool uEnableAttenuation;
+uniform bool uEnableAmbient;
 // activa el efecto de ocultamiento ambiental, utilizado para mejorar la calidad de la iluminación
 uniform bool uEnableAO;
 
@@ -135,11 +138,16 @@ void main()
 
     // Obtener el color difuso del material, ya sea de la textura difusa o del color difuso uniforme.
     vec3 albedo = uHasDiffuseTexture ? texture(uDiffuseTexture, TexCoords).rgb : uDiffuseColor;
+    if (uUnlit)
+    {
+        FragColor = vec4(albedo, 1.0);
+        return;
+    }
     // Calcular la sombra para el fragmento actual, si  está habilitada.
     //shadowFactor devuelve un valor entre 0 y 1, donde 0 completamente iluminado y 1 completamente en sombra.
     
     float shadow = uEnableShadows ? shadowFactor(FragPosLightSpace, N) : 0.0;
-    vec3 ambient = uAmbientStrength * uLightColor * albedo;
+    vec3 ambient = uEnableAmbient ? uAmbientStrength * uLightColor * albedo : vec3(0.0);
     if (uEnableAO)
     {
         //Simula AO su fundamento es que si estás expuesto a la luz ambiental, es probable que estés en un área abierta 
@@ -153,10 +161,13 @@ void main()
     vec3 result = ambient;
     //calcula la iluminación direccional, puntual y de foco, sumando sus contribuciones al color final del fragmento.
     //si todas existen, se suman al resultado final, si no no aportan nada al resultado final.
-    vec3 directional = max(dot(N, normalize(uLightDir)), 0.0) * uLightColor * (1.0 - shadow);
-    result += directional * albedo;
-    if (uEnableSpecular)    
-        result += specularLight(N, normalize(uLightDir), uLightColor) * (1.0 - shadow);
+    if (uEnableDirectionalLight)
+    {
+        vec3 directional = max(dot(N, normalize(uLightDir)), 0.0) * uLightColor * (1.0 - shadow);
+        result += directional * albedo;
+        if (uEnableSpecular)
+            result += specularLight(N, normalize(uLightDir), uLightColor) * (1.0 - shadow);
+    }
 
     if (uEnablePointLight)
     {
